@@ -5,7 +5,7 @@ const authToken = "700dca5d54cc1e0e3c743823fb940578";
 const { google } = require("googleapis");
 const axios = require("axios");
 const client = require("twilio")(accountSid, authToken);
-const stripe = require('stripe')('sk_test_51MroBpCV1XqGrlRbxV1kwA7PUxxh85BJ2twPXTgjlcn2UgLugEa9bSR8d8OQwtHgmP5XTAw22298ddefy8aGoHqo00J8LzVaYa');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 dotenv.config();
 const YOUR_DOMAIN = 'http://localhost:3000';
