@@ -1,8 +1,9 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const User = require("../models/userModule.js");
-const accountSid = "AC0674ca000f39217b72a903d5f91a9e7c";
-const authToken = "700dca5d54cc1e0e3c743823fb940578";
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+
 const { google } = require("googleapis");
 const axios = require("axios");
 const client = require("twilio")(accountSid, authToken);
@@ -62,49 +63,49 @@ const sendVerificationCode = async (req, res) => {
   const { phoneNumber } = req.body;
   if (!phoneNumber) {
     return res.status(400).json({ message: "Phone number is required" });
-  } else {
-    function generateOTP() {
-      const digits = "0123456789";
-      let otp = "";
-      for (let i = 0; i < 6; i++) {
-        otp += digits[Math.floor(Math.random() * 10)];
-      }
-      return otp;
+  }
+
+  function generateOTP() {
+    const digits = "0123456789";
+    let otp = "";
+    for (let i = 0; i < 6; i++) {
+      otp += digits[Math.floor(Math.random() * 10)];
     }
+    return otp;
+  }
 
-    async function sendOTP(phoneNumber, otp) {
-      try {
-        await client.messages.create({
-          body: `Your OTP is ${otp}`,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to: phoneNumber, // Use the user's phone number
-        });
-        console.log(`Sent OTP to ${phoneNumber}`);
-      } catch (err) {
-        console.error(`Error sending OTP: ${err}`);
-        res.status(500).json({ message: "Error sending OTP" });
-        return; // Return early to prevent further response
-      }
-    }
-
-    const otp = generateOTP();
-    const otpExpiration = new Date(Date.now() + 5 * 60 * 1000);
-
+  async function sendOTP(phoneNumber, otp) {
     try {
-      const userDoc = await User.create({
-        phoneNumber,
-        otp,
-        otpExpiration,
+      await client.messages.create({
+        body: `Your OTP is ${otp}`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phoneNumber, // Use the user's phone number
       });
-
-      await sendOTP(userDoc.phoneNumber, userDoc.otp);
-      res.json({ message: "verify" }); // Send a single response
+      console.log(`Sent OTP to ${phoneNumber}`);
     } catch (err) {
-      console.error(`Error creating user: ${err}`);
-      res.status(500).json({ message: "Error creating user" });
+      console.error(`Error sending OTP: ${err}`);
+      return res.status(500).json({ message: "Error sending OTP" }); // Send an error response
     }
   }
+
+  const otp = generateOTP();
+  const otpExpiration = new Date(Date.now() + 5 * 60 * 1000);
+
+  try {
+    const userDoc = await User.create({
+      phoneNumber,
+      otp,
+      otpExpiration,
+    });
+
+    await sendOTP(userDoc.phoneNumber, userDoc.otp);
+    return res.json({ message: "verify" }); // Send a success response
+  } catch (err) {
+    console.error(`Error creating user: ${err}`);
+    return res.status(500).json({ message: "Error creating user" }); // Send an error response
+  }
 };
+
 
 const verifyOTP = async (req, res) => {
   let { otp } = req.body;
@@ -247,6 +248,22 @@ const eventScheldule = async (req, res) => {
       },
     },
   });
+  await calendar.events.insert({
+    calendarId: "primary",
+    auth: oauth2ClientLorena,
+    requestBody: {
+      summary: `Serviciu: ${serviceName}\nNume Client: ${clientName}\nNumarul de telefon Client: ${clientPhoneNumber}`,
+      description: `Programarea are loc intre orele: ${appointmentTime}-${appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60)}:${(appointmentMinute+serviceDurationMinute)%60=== 0 ? "00" :(appointmentMinute+serviceDurationMinute)%60} \n Costul este de: ${serviceCost} RON`,
+      start: {
+        dateTime: dayjs(selectedDay).add(appointmentHour,"hour").add(appointmentMinute, "minute").toISOString(),
+        timeZone: "Europe/Bucharest"    
+      },
+      end: {
+        dateTime: dayjs(selectedDay).add(appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
+        timeZone: "Europe/Bucharest" 
+      },
+    },
+  });
   res.send({
     appService: appointmentHour+6+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60),
     appointmentMinute:appointmentMinute,
@@ -323,8 +340,69 @@ const allInOne = async (req, res) => {
     res.status(500).send("Error deleting events");
   }
 };
+const getEventsAll = async (authClient, timeMin, timeMax) => {
+  const allEvents = [];
 
-// Function to delete all events from a calendar
+  let pageToken = null;
+  do {
+    const result = await calendar.events.list({
+      calendarId: 'primary',
+      auth: authClient,
+      timeMin: timeMin.toISOString(),
+      timeMax: timeMax.toISOString(),
+      maxResults: 2500, // You can adjust this based on your needs
+      pageToken,
+    });
+
+    const events = result.data.items;
+    if (events) {
+      allEvents.push(...events);
+    }
+
+    pageToken = result.data.nextPageToken;
+  } while (pageToken);
+
+  return allEvents;
+};
+
+
+const eventScheduleAll = async (req, res, allData) => {
+  console.log("Scheduling all events to Lorena");
+
+  for (const events of allData) {
+    console.log("Events:", events); // Log the entire events array
+    for (const event of events) {
+      console.log("Event:", event); // Log the entire event object
+      const summary = event.summary;
+      const description = event.description;
+      const start = event.start.dateTime;
+      const end = event.end.dateTime;
+
+      console.log(`Summary: ${summary}`);
+      console.log(`Description: ${description}`);
+      console.log(`Start: ${start}`);
+      console.log(`End: ${end}`);
+
+      await calendar.events.insert({
+        calendarId: "primary",
+        auth: oauth2ClientLorena,
+        requestBody: {
+          summary: summary,
+          description: description,
+          start: {
+            dateTime: start,
+          },
+          end: {
+            dateTime: end,
+          },
+        },
+      });
+      console.log(`Scheduled event to Lorena: ${summary}`);
+    }
+  }
+
+  res.send("All events scheduled to Lorena");
+}
 const deleteAllEvents = async () => {
   try {
     // List all events in the calendar
@@ -357,6 +435,39 @@ const deleteAllEvents = async () => {
     throw err;
   }
 };
+
+
+const refreshAccessToken = async (oauth2Client) => {
+  try {
+    const { tokens } = await oauth2Client.getToken(); // Get a new access token
+    oauth2Client.setCredentials(tokens);
+    console.log(`Refreshed access token for client: ${oauth2Client.credentials.client_id}`);
+  } catch (error) {
+    console.error(`Error refreshing access token for client ${oauth2Client.credentials.client_id}:`, error);
+  }
+};
+
+// Call refreshAccessToken for all clients when needed
+setInterval(() => {
+  if (oauth2ClientGabriela.isTokenExpiring()) {
+    refreshAccessToken(oauth2ClientGabriela);
+  }
+
+  if (oauth2ClientStefania.isTokenExpiring()) {
+    refreshAccessToken(oauth2ClientStefania);
+  }
+  if (oauth2ClientDiana.isTokenExpiring()) {
+    refreshAccessToken(oauth2ClientDiana);
+  }
+  if (oauth2ClientCatalina.isTokenExpiring()) {
+    refreshAccessToken(oauth2ClientCatalina);
+  }
+
+  // Add refresh calls for other clients as needed
+}, 1000 * 60 * 30); // Check every 30 minutes
+
+// Function to delete all events from a calendar
+
 
 
 
