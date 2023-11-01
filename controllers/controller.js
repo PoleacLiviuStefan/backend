@@ -323,34 +323,6 @@ const allInOne = async (req, res) => {
     res.status(500).send("Error deleting events");
   }
 };
-const refreshAccessToken = async (oauth2Client) => {
-  try {
-    const { tokens } = await oauth2Client.getToken(); // Get a new access token
-    oauth2Client.setCredentials(tokens);
-    console.log(`Refreshed access token for client: ${oauth2Client.credentials.client_id}`);
-  } catch (error) {
-    console.error(`Error refreshing access token for client ${oauth2Client.credentials.client_id}:`, error);
-  }
-};
-
-// Call refreshAccessToken for all clients when needed
-setInterval(() => {
-  if (oauth2ClientGabriela.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientGabriela);
-  }
-
-  if (oauth2ClientStefania.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientStefania);
-  }
-  if (oauth2ClientDiana.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientDiana);
-  }
-  if (oauth2ClientCatalina.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientCatalina);
-  }
-
-  // Add refresh calls for other clients as needed
-}, 1000 * 60 * 30); // Check every 30 minutes
 
 // Function to delete all events from a calendar
 const deleteAllEvents = async () => {
