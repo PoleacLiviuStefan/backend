@@ -1,4 +1,5 @@
 const dotenv = require("dotenv");
+dotenv.config();
 const User = require("../models/userModule.js");
 const accountSid = "AC0674ca000f39217b72a903d5f91a9e7c";
 const authToken = "700dca5d54cc1e0e3c743823fb940578";
@@ -7,7 +8,7 @@ const axios = require("axios");
 const client = require("twilio")(accountSid, authToken);
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-dotenv.config();
+
 const YOUR_DOMAIN = 'http://localhost:3000';
 const allKeys= [[process.env.API_KEY_STEFANIA,process.env.API_KEY_DIANA,process.env.API_KEY_CATALINA,
   process.env.API_KEY_GABRIELA],[process.env.CLIENT_SECRET_STEFANIA,process.env.CLIENT_SECRET_DIANA,process.env.CLIENT_SECRET_CATALINA,process.env.CLIENT_SECRET_GABRIELA],[process.env.CLIENT_ID_STEFANIA,process.env.CLIENT_ID_DIANA,process.env.CLIENT_ID_STEFANIA,process.env.CLIENT_ID_GABRIELA]]
