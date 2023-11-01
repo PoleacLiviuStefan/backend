@@ -11,7 +11,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const YOUR_DOMAIN = 'http://localhost:3000';
 const allKeys= [[process.env.API_KEY_STEFANIA,process.env.API_KEY_DIANA,process.env.API_KEY_CATALINA,
-  process.env.API_KEY_GABRIELA],[process.env.CLIENT_SECRET_STEFANIA,process.env.CLIENT_SECRET_DIANA,process.env.CLIENT_SECRET_CATALINA,process.env.CLIENT_SECRET_GABRIELA],[process.env.CLIENT_ID_STEFANIA,process.env.CLIENT_ID_DIANA,process.env.CLIENT_ID_STEFANIA,process.env.CLIENT_ID_GABRIELA]]
+  process.env.API_KEY_GABRIELA,process.env.API_KEY_LORENA],[process.env.CLIENT_SECRET_STEFANIA,process.env.CLIENT_SECRET_DIANA,process.env.CLIENT_SECRET_CATALINA,process.env.CLIENT_SECRET_GABRIELA,process.env.CLIENT_SECRET_LORENA],[process.env.CLIENT_ID_STEFANIA,process.env.CLIENT_ID_DIANA,process.env.CLIENT_ID_STEFANIA,process.env.CLIENT_ID_GABRIELA,process.env.CLIENT_ID_LORENA]]
 let keyIndex=-1;
 const setKeyIndex=(req,res) =>{
   res.send(req.body);
@@ -50,6 +50,11 @@ const oauth2ClientCatalina = new google.auth.OAuth2(
   process.env.REDIRECT_URL_CATALINA
 );
 
+const oauth2ClientLorena = new google.auth.OAuth2(
+  process.env.CLIENT_ID_LORENA,
+  process.env.CLIENT_SECRET_LORENA,
+  process.env.REDIRECT_URL_LORENA
+);
 
 const scopes = ["https://www.googleapis.com/auth/calendar"];
 const token = "";
@@ -148,7 +153,14 @@ const manipulateDataDiana = async (req, res) => {
   }) 
   res.json({url:authorizeUrl});
 };
-  
+const manipulateDataLorena = async (req, res) => {
+  const authorizeUrl = oauth2ClientLorena.generateAuthUrl({
+    acces_type: "offline",
+    scope: scopes,
+    prompt: 'consent'
+  }) 
+  res.json({url:authorizeUrl});
+};
 
 const manipulateDataCatalina = async (req, res) => {
   const authorizeUrl = oauth2ClientCatalina.generateAuthUrl({
@@ -193,6 +205,14 @@ const googleRedirectCatalina = async (req, res) => {
 
   let { tokens } = await oauth2ClientCatalina.getToken(code);
   oauth2ClientCatalina.setCredentials(tokens);
+  
+  res.redirect("http://localhost:3000")
+};
+const googleRedirectLorena = async (req, res) => {
+  const code = req.query.code;
+
+  let { tokens } = await oauth2ClientLorena.getToken(code);
+  oauth2ClientLorena.setCredentials(tokens);
   
   res.redirect("http://localhost:3000")
 };
@@ -268,6 +288,107 @@ endOfDay.setHours(8, 59, 59, 999);
 
 };
 
+const allInOne = async (req, res) => {
+  const currentDate = dayjs();
+
+  // Calculate one month ago and three months from now
+  const oneMonthAgo = currentDate.subtract(1, 'month');
+  const threeMonthsFromNow = currentDate.add(3, 'months');
+  console.log("oneMonthAgo: ", oneMonthAgo.toISOString());
+
+  try {
+    // Call the function to delete all events
+    await deleteAllEvents();
+
+    // Array of client objects
+    const oauth2Clients = [oauth2ClientStefania, oauth2ClientGabriela, oauth2ClientDiana, oauth2ClientCatalina];
+
+    const allData = [];
+
+    for (const authClient of oauth2Clients) {
+      try {
+        // Wrap the calendar.events.list function in a Promise
+        const eventData = await getEventsAll(authClient, oneMonthAgo, threeMonthsFromNow);
+        allData.push(eventData);
+        console.log("Events for client: ", authClient, eventData);
+      } catch (err) {
+        console.error("Error fetching events for client: ", authClient, err);
+      }
+    }
+
+    // Call eventSchedule and pass the relevant data
+    await eventScheduleAll(req, res, allData);
+  } catch (err) {
+    console.error("Error deleting events:", err);
+    res.status(500).send("Error deleting events");
+  }
+};
+const refreshAccessToken = async (oauth2Client) => {
+  try {
+    const { tokens } = await oauth2Client.getToken(); // Get a new access token
+    oauth2Client.setCredentials(tokens);
+    console.log(`Refreshed access token for client: ${oauth2Client.credentials.client_id}`);
+  } catch (error) {
+    console.error(`Error refreshing access token for client ${oauth2Client.credentials.client_id}:`, error);
+  }
+};
+
+// Call refreshAccessToken for all clients when needed
+setInterval(() => {
+  if (oauth2ClientGabriela.isTokenExpiring()) {
+    refreshAccessToken(oauth2ClientGabriela);
+  }
+
+  if (oauth2ClientStefania.isTokenExpiring()) {
+    refreshAccessToken(oauth2ClientStefania);
+  }
+  if (oauth2ClientDiana.isTokenExpiring()) {
+    refreshAccessToken(oauth2ClientDiana);
+  }
+  if (oauth2ClientCatalina.isTokenExpiring()) {
+    refreshAccessToken(oauth2ClientCatalina);
+  }
+
+  // Add refresh calls for other clients as needed
+}, 1000 * 60 * 30); // Check every 30 minutes
+
+// Function to delete all events from a calendar
+const deleteAllEvents = async () => {
+  try {
+    // List all events in the calendar
+    const response = await calendar.events.list({
+      calendarId: 'primary', // Replace with the desired calendar ID
+      auth: oauth2ClientLorena,
+      maxResults: 2500, // Adjust the number of events per page as needed
+    });
+
+    const events = response.data.items;
+
+    if (events.length === 0) {
+      console.log('No events to delete.');
+      return;
+    }
+
+    // Delete each event
+    for (const event of events) {
+      await calendar.events.delete({
+        calendarId: 'primary', // Replace with the desired calendar ID
+        auth: oauth2ClientLorena,
+        eventId: event.id,
+      });
+      console.log(`Deleted event: ${event.summary}`);
+    }
+
+    console.log('All events deleted.');
+  } catch (err) {
+    console.error('Error deleting events:', err);
+    throw err;
+  }
+};
+
+
+
+
 const checkoutStripe= async (req,res)=>{
   const session = await stripe.checkout.sessions.create({
     ui_mode: 'embedded',
@@ -323,14 +444,17 @@ module.exports = {
   manipulateDataStefania,
   manipulateDataDiana,
   manipulateDataCatalina,
+  manipulateDataLorena,
   googleRedirectGabriela,
   googleRedirectStefania,
   googleRedirectDiana,
   googleRedirectCatalina,
+  googleRedirectLorena,
   eventScheldule,
   showEvents,
   setKeyIndex,
   checkoutStripe,
   createPaymentIntent,
-  configTest
+  configTest,
+  allInOne
 };
