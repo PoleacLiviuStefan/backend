@@ -469,16 +469,16 @@ setInterval(async () => {
     console.log(oauth2ClientStefania.credentials);
   }
   if (oauth2ClientDiana.credentials && oauth2ClientDiana.credentials.expiry_date <= Date.now()) {
-    await refreshAccessToken(oauth2ClientDiana, refreshTokens[0]);
+    await refreshAccessToken(oauth2ClientDiana, refreshTokens[2]);
     console.log(oauth2ClientDiana.credentials)
   }
 
   if (oauth2ClientCatalina.credentials && oauth2ClientCatalina.credentials.expiry_date <= Date.now()) {
-    await refreshAccessToken(oauth2ClientCatalina, refreshTokens[1]);
+    await refreshAccessToken(oauth2ClientCatalina, refreshTokens[3]);
     console.log(oauth2ClientCatalina.credentials);
   }
   if (oauth2ClientLorena.credentials && oauth2ClientLorena.credentials.expiry_date <= Date.now()) {
-    await refreshAccessToken(oauth2ClientLorena, refreshTokens[1]);
+    await refreshAccessToken(oauth2ClientLorena, refreshTokens[4]);
     console.log(oauth2ClientLorena.credentials);
   }
   // Add similar checks for other clients as needed
