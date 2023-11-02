@@ -248,11 +248,11 @@ const eventScheldule = async (req, res) => {
       summary: `Serviciu: ${serviceName}\nNume Client: ${clientName}\nNumarul de telefon Client: ${clientPhoneNumber}`,
       description: `Programarea are loc intre orele: ${appointmentTime}-${appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60)}:${(appointmentMinute+serviceDurationMinute)%60=== 0 ? "00" :(appointmentMinute+serviceDurationMinute)%60} \n Costul este de: ${serviceCost} RON`,
       start: {
-        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour-2,"hour").add(appointmentMinute, "minute").toISOString(),
+        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour,"hour").add(appointmentMinute, "minute").toISOString(),
         timeZone: "Europe/Bucharest"    
       },
       end: {
-        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour-2+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
+        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
         timeZone: "Europe/Bucharest" 
       },
     },
