@@ -178,8 +178,8 @@ const googleRedirectGabriela = async (req, res) => {
   let { tokens } = await oauth2ClientGabriela.getToken(code);
   refreshTokens[0]=tokens;
   oauth2ClientGabriela.setCredentials(tokens);
-  console.log(tokens);
-  res.redirect("http://localhost:3000")
+  res.send(tokens);
+
 };
 
 const googleRedirectStefania = async (req, res) => {
