@@ -8,7 +8,12 @@ const { google } = require("googleapis");
 const axios = require("axios");
 const client = require("twilio")(accountSid, authToken);
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-let refreshTokens=[];
+let refreshTokens=[
+ "1//04j7tIF4V7UgrCgYIARAAGAQSNwF-L9Iry9DwXz1XV35NK6nMiLnW1qv1gtwrrq9PCTgcblrfHnAwqysEZInLHZqIad8tdCZ-reE",
+"1//043RwkPE7wwxPCgYIARAAGAQSNwF-L9Ir-rAGSWX6PsEkHvIufCJd7pMIJdC0jk8RoKChEZnAbwrWxsQ_qc2riQv9czLfp6tWAdA",
+"1//04H_NrhMZNg-WCgYIARAAGAQSNwF-L9Ir9TUSw0Z01Fuhc8oCgJtnhOjNO6zIS4N9v0Lp9cN1rk1QZPW0ahxheq1ceDt2ZsjPnbQ",
+"1//04FnzyR61hJYyCgYIARAAGAQSNwF-L9IrmokQPEVq_zY8pYUQULDYWZDFCI4dlYVU70ka2xr8XC0x0_lxg45KfVmwZZZ4bNG3zzo",
+"1//04GtH-QUGnZksCgYIARAAGAQSNwF-L9IrSV9SUa6eDABMMw5XapxFETO0-depW9sEehduUqmNIf5v9aVKUbW928NP1pgomwyn0Jw"];
 
 const YOUR_DOMAIN = 'http://localhost:3000';
 const allKeys= [[process.env.API_KEY_STEFANIA,process.env.API_KEY_DIANA,process.env.API_KEY_CATALINA,
@@ -176,10 +181,8 @@ const googleRedirectGabriela = async (req, res) => {
   const code = req.query.code;
   
   let { tokens } = await oauth2ClientGabriela.getToken(code);
-  refreshTokens[0]=tokens;
   oauth2ClientGabriela.setCredentials(tokens);
-  console.log(tokens);
-  res.send(tokens);
+  res.redirect("http://localhost:3000")
 
 };
 
@@ -187,7 +190,6 @@ const googleRedirectStefania = async (req, res) => {
   const code = req.query.code;
 
   let { tokens } = await oauth2ClientStefania.getToken(code);
-  refreshTokens[1]=tokens;
   oauth2ClientStefania.setCredentials(tokens);
   
   res.redirect("http://localhost:3000")
@@ -198,8 +200,6 @@ const googleRedirectDiana = async (req, res) => {
 
   let { tokens } = await oauth2ClientDiana.getToken(code);
 
-  refreshTokens[2]=tokens;
-
   oauth2ClientDiana.setCredentials(tokens);
   
   res.redirect("http://localhost:3000")
@@ -209,8 +209,6 @@ const googleRedirectCatalina = async (req, res) => {
   const code = req.query.code;
 
   let { tokens } = await oauth2ClientCatalina.getToken(code);
-
-  refreshTokens[3]=tokens;
   
   oauth2ClientCatalina.setCredentials(tokens);
   
@@ -221,8 +219,6 @@ const googleRedirectLorena = async (req, res) => {
 
   let { tokens } = await oauth2ClientLorena.getToken(code);
 
-  refreshTokens[4]=tokens;
-
   oauth2ClientLorena.setCredentials(tokens);
   
   res.redirect("http://localhost:3000")
@@ -231,7 +227,10 @@ const googleRedirectLorena = async (req, res) => {
 const eventScheldule = async (req, res) => {
   console.log("in Manipulate")
   const {clientPhoneNumber,serviceCost,clientName,serviceName,appointmentTime,appointmentDate,serviceDuration}=req.body;
-  
+  oauth2ClientGabriela.setCredentials({refresh_token: refreshTokens[0]})
+  oauth2ClientStefania.setCredentials({refresh_token: refreshTokens[1]})
+  oauth2ClientDiana.setCredentials({refresh_token: refreshTokens[2]})
+  oauth2ClientCatalina.setCredentials({refresh_token: refreshTokens[3]})
   const appointmentMinute=parseInt(appointmentTime[3])*10 + parseInt(appointmentTime[4])
   const appointmentHour=parseInt(appointmentTime[0])*10 + parseInt(appointmentTime[1])
   const serviceDurationHour=parseInt(serviceDuration[0]);
@@ -258,6 +257,7 @@ const eventScheldule = async (req, res) => {
       },
     },
   });
+  oauth2ClientLorena.setCredentials({refresh_token: refreshTokens[4]})
   await calendar.events.insert({
     calendarId: "primary",
     auth: oauth2ClientLorena,
@@ -282,9 +282,10 @@ const eventScheldule = async (req, res) => {
 };
 
 const showEvents = async (req, res) => {
-    console.log((keyIndex===0 ? oauth2ClientStefania.credentials.access_token : keyIndex===1 ? oauth2ClientDiana.credentials.access_token : keyIndex===2 ? oauth2ClientCatalina.credentials.access_token : oauth2ClientGabriela.credentials.access_token ));
+  
     const {minDate}=req.body;
     const dateString = minDate;
+
 const dateArray = dateString.split('-');
 const year = parseInt(dateArray[0]);
 const month = parseInt(dateArray[1]) - 1; // Months are zero-indexed
@@ -296,7 +297,10 @@ startOfDay.setHours(-15, 0, 0, 1);
 // Set timeMax to the end of the day
 const endOfDay = new Date(date);
 endOfDay.setHours(8, 59, 59, 999);
-
+    oauth2ClientGabriela.setCredentials({refresh_token: refreshTokens[0]})
+    oauth2ClientStefania.setCredentials({refresh_token: refreshTokens[1]})
+    oauth2ClientDiana.setCredentials({refresh_token: refreshTokens[2]})
+    oauth2ClientCatalina.setCredentials({refresh_token: refreshTokens[3]})
   await calendar.events.list(
     {
       calendarId: "primary",
@@ -331,7 +335,10 @@ const allInOne = async (req, res) => {
     const oauth2Clients = [oauth2ClientStefania, oauth2ClientGabriela, oauth2ClientDiana, oauth2ClientCatalina];
 
     const allData = [];
-
+    oauth2ClientGabriela.setCredentials({refresh_token: refreshTokens[0]})
+    oauth2ClientStefania.setCredentials({refresh_token: refreshTokens[1]})
+    oauth2ClientDiana.setCredentials({refresh_token: refreshTokens[2]})
+    oauth2ClientCatalina.setCredentials({refresh_token: refreshTokens[3]})
     for (const authClient of oauth2Clients) {
       try {
         // Wrap the calendar.events.list function in a Promise
@@ -354,6 +361,10 @@ const getEventsAll = async (authClient, timeMin, timeMax) => {
   const allEvents = [];
 
   let pageToken = null;
+  oauth2ClientGabriela.setCredentials({refresh_token: refreshTokens[0]})
+  oauth2ClientStefania.setCredentials({refresh_token: refreshTokens[1]})
+  oauth2ClientDiana.setCredentials({refresh_token: refreshTokens[2]})
+  oauth2ClientCatalina.setCredentials({refresh_token: refreshTokens[3]})
   do {
     const result = await calendar.events.list({
       calendarId: 'primary',
@@ -392,7 +403,7 @@ const eventScheduleAll = async (req, res, allData) => {
       console.log(`Description: ${description}`);
       console.log(`Start: ${start}`);
       console.log(`End: ${end}`);
-
+      oauth2ClientLorena.setCredentials({refresh_token: refreshTokens[4]})
       await calendar.events.insert({
         calendarId: "primary",
         auth: oauth2ClientLorena,
@@ -414,6 +425,7 @@ const eventScheduleAll = async (req, res, allData) => {
   res.send("All events scheduled to Lorena");
 }
 const deleteAllEvents = async () => {
+    oauth2ClientLorena.setCredentials({refresh_token: refreshTokens[4]})
   try {
     // List all events in the calendar
     const response = await calendar.events.list({
@@ -430,6 +442,7 @@ const deleteAllEvents = async () => {
     }
 
     // Delete each event
+    oauth2ClientLorena.setCredentials({refresh_token: refreshTokens[4]})
     for (const event of events) {
       await calendar.events.delete({
         calendarId: 'primary', // Replace with the desired calendar ID
@@ -447,45 +460,7 @@ const deleteAllEvents = async () => {
 };
 
 
-const refreshAccessToken = async (oauth2Client, refreshToken) => {
-  try {
-    const newTokens = await oauth2Client.refreshToken(refreshToken);
-    oauth2Client.setCredentials(newTokens.tokens);
-    console.log(`Refreshed access token for client: ${oauth2Client.credentials}`);
-  } catch (error) {
-    console.error(`Error refreshing access token for client ${oauth2Client.credentials.client_id}:`, error);
-  }
-};
 
-// Call refreshAccessToken for all clients when needed
-setInterval(async () => {
-  // Check if the access token is about to expire and refresh it
-  if (oauth2ClientGabriela.credentials && oauth2ClientGabriela.credentials.expiry_date <= Date.now()) {
-    await refreshAccessToken(oauth2ClientGabriela, refreshTokens[0]);
-    console.log(oauth2ClientGabriela.credentials);
-  }
-
-  if (oauth2ClientStefania.credentials && oauth2ClientStefania.credentials.expiry_date <= Date.now()) {
-    await refreshAccessToken(oauth2ClientStefania, refreshTokens[1]);
-    console.log(oauth2ClientStefania.credentials);
-  }
-  if (oauth2ClientDiana.credentials && oauth2ClientDiana.credentials.expiry_date <= Date.now()) {
-    await refreshAccessToken(oauth2ClientDiana, refreshTokens[2]);
-    console.log(oauth2ClientDiana.credentials)
-  }
-
-  if (oauth2ClientCatalina.credentials && oauth2ClientCatalina.credentials.expiry_date <= Date.now()) {
-    await refreshAccessToken(oauth2ClientCatalina, refreshTokens[3]);
-    console.log(oauth2ClientCatalina.credentials);
-  }
-  if (oauth2ClientLorena.credentials && oauth2ClientLorena.credentials.expiry_date <= Date.now()) {
-    await refreshAccessToken(oauth2ClientLorena, refreshTokens[4]);
-    console.log(oauth2ClientLorena.credentials);
-  }
-  // Add similar checks for other clients as needed
-}, 1000 * 60 * 30); // Check every 30 minutes
-
-// Function to delete all events from a calendar
 
 
 
