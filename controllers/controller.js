@@ -210,7 +210,7 @@ const googleRedirectCatalina = async (req, res) => {
   let { tokens } = await oauth2ClientCatalina.getToken(code);
 
   refreshTokens[3]=tokens;
-
+  
   oauth2ClientCatalina.setCredentials(tokens);
   
   res.redirect("http://localhost:3000")
@@ -446,10 +446,10 @@ const deleteAllEvents = async () => {
 };
 
 
-const refreshAccessToken = async (oauth2Client,refreshToken) => {
+const refreshAccessToken = async (oauth2Client, refreshToken) => {
   try {
-
-    oauth2Client.setCredentials(refreshToken);
+    const newTokens = await oauth2Client.refreshToken(refreshToken);
+    oauth2Client.setCredentials(newTokens.tokens);
     console.log(`Refreshed access token for client: ${oauth2Client.credentials.client_id}`);
   } catch (error) {
     console.error(`Error refreshing access token for client ${oauth2Client.credentials.client_id}:`, error);
@@ -457,24 +457,31 @@ const refreshAccessToken = async (oauth2Client,refreshToken) => {
 };
 
 // Call refreshAccessToken for all clients when needed
-setInterval(() => {
-  if (oauth2ClientGabriela.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientGabriela,refreshTokens[0]);
+setInterval(async () => {
+  // Check if the access token is about to expire and refresh it
+  if (oauth2ClientGabriela.credentials && oauth2ClientGabriela.credentials.expiry_date <= Date.now()) {
+    await refreshAccessToken(oauth2ClientGabriela, refreshTokens[0]);
+    console.log(oauth2ClientGabriela.credentials);
   }
 
-  if (oauth2ClientStefania.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientStefania,refreshTokens[1]);
+  if (oauth2ClientStefania.credentials && oauth2ClientStefania.credentials.expiry_date <= Date.now()) {
+    await refreshAccessToken(oauth2ClientStefania, refreshTokens[1]);
+    console.log(oauth2ClientStefania.credentials);
   }
-  if (oauth2ClientDiana.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientDiana,refreshTokens[2]);
+  if (oauth2ClientDiana.credentials && oauth2ClientDiana.credentials.expiry_date <= Date.now()) {
+    await refreshAccessToken(oauth2ClientDiana, refreshTokens[0]);
+    console.log(oauth2ClientDiana.credentials)
   }
-  if (oauth2ClientCatalina.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientCatalina,refreshTokens[3]);
+
+  if (oauth2ClientCatalina.credentials && oauth2ClientCatalina.credentials.expiry_date <= Date.now()) {
+    await refreshAccessToken(oauth2ClientCatalina, refreshTokens[1]);
+    console.log(oauth2ClientCatalina.credentials);
   }
-  if (oauth2ClientLorena.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientLorena,refreshTokens[4]);
+  if (oauth2ClientLorena.credentials && oauth2ClientLorena.credentials.expiry_date <= Date.now()) {
+    await refreshAccessToken(oauth2ClientLorena, refreshTokens[1]);
+    console.log(oauth2ClientLorena.credentials);
   }
-  // Add refresh calls for other clients as needed
+  // Add similar checks for other clients as needed
 }, 1000 * 60 * 30); // Check every 30 minutes
 
 // Function to delete all events from a calendar
