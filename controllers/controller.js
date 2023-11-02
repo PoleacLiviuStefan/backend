@@ -178,7 +178,7 @@ const googleRedirectGabriela = async (req, res) => {
   let { tokens } = await oauth2ClientGabriela.getToken(code);
   refreshTokens[0]=tokens;
   oauth2ClientGabriela.setCredentials(tokens);
-  
+  console.log(tokens);
   res.redirect("http://localhost:3000")
 };
 
@@ -450,7 +450,7 @@ const refreshAccessToken = async (oauth2Client, refreshToken) => {
   try {
     const newTokens = await oauth2Client.refreshToken(refreshToken);
     oauth2Client.setCredentials(newTokens.tokens);
-    console.log(`Refreshed access token for client: ${oauth2Client.credentials.client_id}`);
+    console.log(`Refreshed access token for client: ${oauth2Client.credentials}`);
   } catch (error) {
     console.error(`Error refreshing access token for client ${oauth2Client.credentials.client_id}:`, error);
   }
