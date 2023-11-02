@@ -8,7 +8,7 @@ const { google } = require("googleapis");
 const axios = require("axios");
 const client = require("twilio")(accountSid, authToken);
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
+let refreshTokens=[];
 
 const YOUR_DOMAIN = 'http://localhost:3000';
 const allKeys= [[process.env.API_KEY_STEFANIA,process.env.API_KEY_DIANA,process.env.API_KEY_CATALINA,
@@ -58,7 +58,7 @@ const oauth2ClientLorena = new google.auth.OAuth2(
 );
 
 const scopes = ["https://www.googleapis.com/auth/calendar"];
-const token = "";
+
 const sendVerificationCode = async (req, res) => {
   const { phoneNumber } = req.body;
   if (!phoneNumber) {
@@ -176,7 +176,7 @@ const googleRedirectGabriela = async (req, res) => {
   const code = req.query.code;
   
   let { tokens } = await oauth2ClientGabriela.getToken(code);
-  console.log(tokens)
+  refreshTokens[0]=tokens;
   oauth2ClientGabriela.setCredentials(tokens);
   
   res.redirect("http://localhost:3000")
@@ -186,7 +186,7 @@ const googleRedirectStefania = async (req, res) => {
   const code = req.query.code;
 
   let { tokens } = await oauth2ClientStefania.getToken(code);
-
+  refreshTokens[1]=tokens;
   oauth2ClientStefania.setCredentials(tokens);
   
   res.redirect("http://localhost:3000")
@@ -196,6 +196,9 @@ const googleRedirectDiana = async (req, res) => {
   const code = req.query.code;
 
   let { tokens } = await oauth2ClientDiana.getToken(code);
+
+  refreshTokens[2]=tokens;
+
   oauth2ClientDiana.setCredentials(tokens);
   
   res.redirect("http://localhost:3000")
@@ -205,6 +208,9 @@ const googleRedirectCatalina = async (req, res) => {
   const code = req.query.code;
 
   let { tokens } = await oauth2ClientCatalina.getToken(code);
+
+  refreshTokens[3]=tokens;
+
   oauth2ClientCatalina.setCredentials(tokens);
   
   res.redirect("http://localhost:3000")
@@ -213,6 +219,9 @@ const googleRedirectLorena = async (req, res) => {
   const code = req.query.code;
 
   let { tokens } = await oauth2ClientLorena.getToken(code);
+
+  refreshTokens[4]=tokens;
+
   oauth2ClientLorena.setCredentials(tokens);
   
   res.redirect("http://localhost:3000")
@@ -239,11 +248,11 @@ const eventScheldule = async (req, res) => {
       summary: `Serviciu: ${serviceName}\nNume Client: ${clientName}\nNumarul de telefon Client: ${clientPhoneNumber}`,
       description: `Programarea are loc intre orele: ${appointmentTime}-${appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60)}:${(appointmentMinute+serviceDurationMinute)%60=== 0 ? "00" :(appointmentMinute+serviceDurationMinute)%60} \n Costul este de: ${serviceCost} RON`,
       start: {
-        dateTime: dayjs(selectedDay+1).add(appointmentHour-2,"hour").add(appointmentMinute, "minute").toISOString(),
+        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour-2,"hour").add(appointmentMinute, "minute").toISOString(),
         timeZone: "Europe/Bucharest"    
       },
       end: {
-        dateTime: dayjs(selectedDay+1).add(appointmentHour-2+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
+        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour-2+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
         timeZone: "Europe/Bucharest" 
       },
     },
@@ -255,11 +264,11 @@ const eventScheldule = async (req, res) => {
       summary: `Serviciu: ${serviceName}\nNume Client: ${clientName}\nNumarul de telefon Client: ${clientPhoneNumber}`,
       description: `Programarea are loc intre orele: ${appointmentTime}-${appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60)}:${(appointmentMinute+serviceDurationMinute)%60=== 0 ? "00" :(appointmentMinute+serviceDurationMinute)%60} \n Costul este de: ${serviceCost} RON`,
       start: {
-        dateTime: dayjs(selectedDay+1).add(appointmentHour-2,"hour").add(appointmentMinute, "minute").toISOString(),
+        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour,"hour").add(appointmentMinute, "minute").toISOString(),
         timeZone: "Europe/Bucharest"    
       },
       end: {
-        dateTime: dayjs(selectedDay+1).add(appointmentHour-2+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
+        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
         timeZone: "Europe/Bucharest" 
       },
     },
@@ -437,10 +446,10 @@ const deleteAllEvents = async () => {
 };
 
 
-const refreshAccessToken = async (oauth2Client) => {
+const refreshAccessToken = async (oauth2Client,refreshToken) => {
   try {
-    const { tokens } = await oauth2Client.getToken(); // Get a new access token
-    oauth2Client.setCredentials(tokens);
+
+    oauth2Client.setCredentials(refreshToken);
     console.log(`Refreshed access token for client: ${oauth2Client.credentials.client_id}`);
   } catch (error) {
     console.error(`Error refreshing access token for client ${oauth2Client.credentials.client_id}:`, error);
@@ -450,19 +459,21 @@ const refreshAccessToken = async (oauth2Client) => {
 // Call refreshAccessToken for all clients when needed
 setInterval(() => {
   if (oauth2ClientGabriela.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientGabriela);
+    refreshAccessToken(oauth2ClientGabriela,refreshTokens[0]);
   }
 
   if (oauth2ClientStefania.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientStefania);
+    refreshAccessToken(oauth2ClientStefania,refreshTokens[1]);
   }
   if (oauth2ClientDiana.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientDiana);
+    refreshAccessToken(oauth2ClientDiana,refreshTokens[2]);
   }
   if (oauth2ClientCatalina.isTokenExpiring()) {
-    refreshAccessToken(oauth2ClientCatalina);
+    refreshAccessToken(oauth2ClientCatalina,refreshTokens[3]);
   }
-
+  if (oauth2ClientLorena.isTokenExpiring()) {
+    refreshAccessToken(oauth2ClientLorena,refreshTokens[4]);
+  }
   // Add refresh calls for other clients as needed
 }, 1000 * 60 * 30); // Check every 30 minutes
 
