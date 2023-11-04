@@ -185,20 +185,7 @@ const eventScheldule = async (req, res) => {
       professional,
       clientPhoneNumber,  
     });
-    try {
-      const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-      await client.messages.create({
-        from: messagingServiceSid,
-        to: clientPhoneNumber, 
-        body: `Buna, ${clientName}, iti reamintim ca pe data de ${appointmentDate} la ora ${appointmentTime} ai o programare la ${professional} pentru ${serviceName} in incinta Lorena Lash Studio. Te asteptam cu drag!`,
-        scheduleType: 'fixed',
-        sendAt: dayjs(selectedDay).add(appointmentHour,"hour").add(appointmentMinute, "minute").subtract(1,"day").toISOString(),
-      });
-      console.log(`Sent reminder to ${clientPhoneNumber}`);
-    } catch (err) {
-      console.error(`Error sending reminder: ${err}`);
-      return res.status(500).json({ message: "Error sending reminder" }); // Send an error response
-    }
+  
     return res.json({ message: "clientSaved" }); // Send a success response
   } catch (err) {
     console.error(`Error creating client: ${err}`);
