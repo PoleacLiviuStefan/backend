@@ -94,7 +94,7 @@ const sendConfirmationDetails= async (req,res)=>{
   async function sendConfirmationDetails(phoneNumber) {
     try {
       await client.messages.create({
-        body: `Te-ai programat la gene pentru ${service} \nTe asteptam la data de ${selectedDay} , la ora ${serviceTime}`,
+        body: `Te-ai programat la gene/sprancene pentru ${service} \nTe asteptam la data de ${selectedDay} , la ora ${serviceTime}`,
         from: process.env.TWILIO_PHONE_NUMBER,
         to: phoneNumber, // Use the user's phone number
       });
