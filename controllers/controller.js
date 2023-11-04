@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const User = require("../models/userModule.js");
+const Client = require("../models/clientModule.js");
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 
@@ -34,11 +35,19 @@ const oauth2ClientLorena = new google.auth.OAuth2(
 
 const scopes = ["https://www.googleapis.com/auth/calendar"];
 const sendConfirmationDetails= async (req,res)=>{
-  const {service,serviceDate,serviceTime}=req.body;
-  async function sendConfirmationDetails(phoneNumber, otp) {
+  const {phoneNumber,service,serviceDate,serviceTime}=req.body;
+  const inputDate = new Date(serviceDate);
+
+  const year = inputDate.getFullYear();
+  const month = inputDate.getMonth(); // Months are 0-based (0 for January, 1 for February, etc.)
+  const day = inputDate.getDate() ;
+  let selectedDay = new Date(year, month, day);
+  const date=dayjs(selectedDay);
+  selectedDay=date.format("DD-MM-YYYY");
+  async function sendConfirmationDetails(phoneNumber) {
     try {
       await client.messages.create({
-        body: `Te-ai programat la gene pentru ${otp} \n Te asteptam la data de , la ora`,
+        body: `Te-ai programat la gene pentru ${service} \nTe asteptam la data de ${selectedDay} , la ora ${serviceTime}`,
         from: process.env.TWILIO_PHONE_NUMBER,
         to: phoneNumber, // Use the user's phone number
       });
@@ -49,7 +58,7 @@ const sendConfirmationDetails= async (req,res)=>{
     }
   }
 
-  await sendConfirmationDetails();
+  await sendConfirmationDetails(phoneNumber);
 }
 const sendVerificationCode = async (req, res) => {
   const { phoneNumber } = req.body;
@@ -140,7 +149,7 @@ const googleRedirectLorena = async (req, res) => {
 
 const eventScheldule = async (req, res) => {
   console.log("in Manipulate")
-  const {clientPhoneNumber,serviceCost,clientName,serviceName,appointmentTime,appointmentDate,serviceDuration}=req.body;
+  const {clientPhoneNumber,serviceCost,clientName,serviceName,professional,appointmentTime,appointmentDate,serviceDuration}=req.body;
   oauth2ClientLorena.setCredentials({refresh_token: process.env.REFRESH_TOKEN_LORENA})
   const appointmentMinute=parseInt(appointmentTime[3])*10 + parseInt(appointmentTime[4])
   const appointmentHour=parseInt(appointmentTime[0])*10 + parseInt(appointmentTime[1])
@@ -159,42 +168,51 @@ const eventScheldule = async (req, res) => {
       summary: `Serviciu: ${serviceName}\nNume Client: ${clientName}\nNumarul de telefon Client: ${clientPhoneNumber}`,
       description: `Programarea are loc intre orele: ${appointmentTime}-${appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60)}:${(appointmentMinute+serviceDurationMinute)%60=== 0 ? "00" :(appointmentMinute+serviceDurationMinute)%60} \n Costul este de: ${serviceCost} RON`,
       start: {
-        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour,"hour").add(appointmentMinute, "minute").toISOString(),
+        dateTime: dayjs(selectedDay).add(appointmentHour,"hour").add(appointmentMinute, "minute").toISOString(),
         timeZone: "Europe/Bucharest"    
       },
       end: {
-        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
+        dateTime: dayjs(selectedDay).add(appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
         timeZone: "Europe/Bucharest" 
       },
     },
   });
-  oauth2ClientLorena.setCredentials({refresh_token: process.env.REFRESH_TOKEN_LORENA})
-  await calendar.events.insert({
-    calendarId: (keyIndex===0 ? process.env.CALENDAR_ID_STEFANIA : keyIndex===1 ? process.env.CALENDAR_ID_DIANA : keyIndex===2 ? process.env.CALENDAR_ID_CATALINA : keyIndex===3 && process.env.CALENDAR_ID_GABRIELA),
-    auth: oauth2ClientLorena,
-    requestBody: {
-      summary: `Serviciu: ${serviceName}\nNume Client: ${clientName}\nNumarul de telefon Client: ${clientPhoneNumber}`,
-      description: `Programarea are loc intre orele: ${appointmentTime}-${appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60)}:${(appointmentMinute+serviceDurationMinute)%60=== 0 ? "00" :(appointmentMinute+serviceDurationMinute)%60} \n Costul este de: ${serviceCost} RON`,
-      start: {
-        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour,"hour").add(appointmentMinute, "minute").toISOString(),
-        timeZone: "Europe/Bucharest"    
-      },
-      end: {
-        dateTime: dayjs(selectedDay).add(1,"day").add(appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
-        timeZone: "Europe/Bucharest" 
-      },
-    },
-  });
-  res.send({
-    appService: appointmentHour+6+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60),
-    appointmentMinute:appointmentMinute,
-    serviceDurationMinute:serviceDurationMinute
-  });
+  try {
+    const clientDoc = await Client.create({
+      clientName,
+      serviceName,
+      appointmentDate,
+      appointmentTime,
+      professional,
+      clientPhoneNumber,  
+    });
+    try {
+      const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+      await client.messages.create({
+        from: messagingServiceSid,
+        to: clientPhoneNumber, 
+        body: `Buna, ${clientName}, iti reamintim ca pe data de ${appointmentDate} la ora ${appointmentTime} ai o programare la ${professional} pentru ${serviceName} in incinta Lorena Lash Studio. Te asteptam cu drag!`,
+        scheduleType: 'fixed',
+        sendAt: dayjs(selectedDay).add(appointmentHour,"hour").add(appointmentMinute, "minute").subtract(1,"day").toISOString(),
+      });
+      console.log(`Sent reminder to ${clientPhoneNumber}`);
+    } catch (err) {
+      console.error(`Error sending reminder: ${err}`);
+      return res.status(500).json({ message: "Error sending reminder" }); // Send an error response
+    }
+    return res.json({ message: "clientSaved" }); // Send a success response
+  } catch (err) {
+    console.error(`Error creating client: ${err}`);
+    return res.status(500).json({ message: "Error creating client" }); // Send an error response
+  }
+
+
 };
 
 const showEvents = async (req, res) => {
   
     const {minDate}=req.body;
+    let eventsSummarys=[];
     const dateString = minDate;
     oauth2ClientLorena.setCredentials({refresh_token: process.env.REFRESH_TOKEN_LORENA})
 const dateArray = dateString.split('-');
@@ -221,6 +239,9 @@ endOfDay.setHours(8, 59, 59, 999);
     },
     (err, resp) => {
       if (err) return console.log("The API returned an error: " + err);
+      for(const event of resp.data.items)
+        eventsSummarys.push(event.summary);
+    
       res.send(resp.data.items);
     }
   );
