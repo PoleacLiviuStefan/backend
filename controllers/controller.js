@@ -34,32 +34,6 @@ const oauth2ClientLorena = new google.auth.OAuth2(
 );
 
 const scopes = ["https://www.googleapis.com/auth/calendar"];
-const sendConfirmationDetails= async (req,res)=>{
-  const {phoneNumber,service,serviceDate,serviceTime}=req.body;
-  const inputDate = new Date(serviceDate);
-
-  const year = inputDate.getFullYear();
-  const month = inputDate.getMonth(); // Months are 0-based (0 for January, 1 for February, etc.)
-  const day = inputDate.getDate() ;
-  let selectedDay = new Date(year, month, day);
-  const date=dayjs(selectedDay);
-  selectedDay=date.format("DD-MM-YYYY");
-  async function sendConfirmationDetails(phoneNumber) {
-    try {
-      await client.messages.create({
-        body: `Te-ai programat la gene pentru ${service} \nTe asteptam la data de ${selectedDay} , la ora ${serviceTime}`,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: phoneNumber, // Use the user's phone number
-      });
-      console.log(`Sent details to ${phoneNumber}`);
-    } catch (err) {
-      console.error(`Error sending details: ${err}`);
-      return res.status(500).json({ message: "Error sending details" }); // Send an error response
-    }
-  }
-
-  await sendConfirmationDetails(phoneNumber);
-}
 const sendVerificationCode = async (req, res) => {
   const { phoneNumber } = req.body;
   if (!phoneNumber) {
@@ -107,7 +81,32 @@ const sendVerificationCode = async (req, res) => {
   }
 };
 
+const sendConfirmationDetails= async (req,res)=>{
+  const {phoneNumber,service,serviceDate,serviceTime}=req.body;
+  const inputDate = new Date(serviceDate);
 
+  const year = inputDate.getFullYear();
+  const month = inputDate.getMonth(); // Months are 0-based (0 for January, 1 for February, etc.)
+  const day = inputDate.getDate() ;
+  let selectedDay = new Date(year, month, day);
+  const date=dayjs(selectedDay);
+  selectedDay=date.format("DD-MM-YYYY");
+  async function sendConfirmationDetails(phoneNumber) {
+    try {
+      await client.messages.create({
+        body: `Te-ai programat la gene pentru ${service} \nTe asteptam la data de ${selectedDay} , la ora ${serviceTime}`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: phoneNumber, // Use the user's phone number
+      });
+      console.log(`Sent details to ${phoneNumber}`);
+    } catch (err) {
+      console.error(`Error sending details: ${err}`);
+      return res.status(500).json({ message: "Error sending details" }); // Send an error response
+    }
+  }
+
+  await sendConfirmationDetails(phoneNumber);
+}
 const verifyOTP = async (req, res) => {
   let { otp } = req.body;
   if (!otp) {
