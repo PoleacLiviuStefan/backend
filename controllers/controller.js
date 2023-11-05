@@ -88,7 +88,7 @@ const sendConfirmationDetails= async (req,res)=>{
   const year = inputDate.getFullYear();
   const month = inputDate.getMonth(); // Months are 0-based (0 for January, 1 for February, etc.)
   const day = inputDate.getDate() ;
-  let selectedDay = new Date(year, month, day);
+  let selectedDay = new Date(year, month+1, day);
   const date=dayjs(selectedDay);
   selectedDay=date.format("DD-MM-YYYY");
   async function sendConfirmationDetails(phoneNumber) {
@@ -167,7 +167,7 @@ const eventScheldule = async (req, res) => {
       summary: `Serviciu: ${serviceName}\nNume Client: ${clientName}\nNumarul de telefon Client: ${clientPhoneNumber}`,
       description: `Programarea are loc intre orele: ${appointmentTime}-${appointmentHour+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60)}:${(appointmentMinute+serviceDurationMinute)%60=== 0 ? "00" :(appointmentMinute+serviceDurationMinute)%60} \n Costul este de: ${serviceCost} RON`,
       start: {
-        dateTime: dayjs(selectedDay).add(appointmentHour-2,"hour").add(appointmentMinute, "minute").toISOString(),
+        dateTime: dayjs(selectedDay).add(appointmentHour-2,"hour").add(appointmentMinute, "minute").add(1,"day").toISOString(),
         timeZone: "Europe/Bucharest"    
       },
       end: {
