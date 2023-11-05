@@ -88,7 +88,7 @@ const sendConfirmationDetails= async (req,res)=>{
   const year = inputDate.getFullYear();
   const month = inputDate.getMonth(); // Months are 0-based (0 for January, 1 for February, etc.)
   const day = inputDate.getDate() ;
-  let selectedDay = new Date(year, month+1, day);
+  let selectedDay = new Date(year, month, day+1);
   const date=dayjs(selectedDay);
   selectedDay=date.format("DD-MM-YYYY");
   async function sendConfirmationDetails(phoneNumber) {
@@ -171,7 +171,7 @@ const eventScheldule = async (req, res) => {
         timeZone: "Europe/Bucharest"    
       },
       end: {
-        dateTime: dayjs(selectedDay).add(appointmentHour-2+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").toISOString(),
+        dateTime: dayjs(selectedDay).add(appointmentHour-2+serviceDurationHour+Math.floor((appointmentMinute+serviceDurationMinute)/60), "hour").add((appointmentMinute+serviceDurationMinute)%60, "minute").add(1,"day").toISOString(),
         timeZone: "Europe/Bucharest" 
       },
     },
