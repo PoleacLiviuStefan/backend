@@ -9,7 +9,7 @@ const { google } = require("googleapis");
 const axios = require("axios");
 const client = require("twilio")(accountSid, authToken);
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
+let createdCustomerId="";
 const YOUR_DOMAIN = 'http://localhost:3000';
 
 let keyIndex=-1;
@@ -236,6 +236,7 @@ endOfDay.setHours(8, 59, 59, 999);
 
 
 const checkoutStripe= async (req,res)=>{
+
   const session = await stripe.checkout.sessions.create({
     ui_mode: 'embedded',
     line_items: [
@@ -246,6 +247,7 @@ const checkoutStripe= async (req,res)=>{
       },
     ],
     mode: 'payment',
+
     return_url: `${YOUR_DOMAIN}/success`,
     automatic_tax: {enabled: true},
   });
@@ -253,13 +255,27 @@ const checkoutStripe= async (req,res)=>{
   res.send({clientSecret: session.client_secret});
 }
 
+const createCustomer= async (req,res)=>{
+  const {customerName} =req.body;
+  
+  const customerCreated = await stripe.customers.create({
+    name: customerName, // Replace with the customer's name
+    // other customer information
+  });
+  console.log("customerName: ",customerName);
+  createdCustomerId=customerCreated.id;
+  res.status(200).json({ message: 'Customer created successfully' });
+}
 
 const createPaymentIntent = async (req, res) => {
+
+  console.log(createdCustomerId);
   try {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: 10000,
   currency: 'ron',
   automatic_payment_methods: {enabled: true},
+  customer:createdCustomerId
     });
 
     // Send publishable key nd PaymentIntent details to client
@@ -293,6 +309,7 @@ module.exports = {
   showEvents,
   setKeyIndex,
   checkoutStripe,
+  createCustomer,
   createPaymentIntent,
   configTest,
 };

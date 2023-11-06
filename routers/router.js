@@ -11,6 +11,7 @@ router.post('/schedule_event', controller.eventScheldule);
 router.post('/showEvents', controller.showEvents);
 router.post('/setIndex', controller.setKeyIndex);
 router.post("/checkout-session",controller.checkoutStripe);
+router.post("/create-customer",controller.createCustomer);
 router.post("/create-payment-intent", controller.createPaymentIntent);
 router.get("/config",controller.configTest);
 module.exports = router;
