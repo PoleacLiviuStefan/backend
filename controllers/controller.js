@@ -205,13 +205,13 @@ const dateArray = dateString.split('-');
 const year = parseInt(dateArray[0]);
 const month = parseInt(dateArray[1]) - 1; // Months are zero-indexed
 const day = parseInt(dateArray[2]);
-const date = new Date(year, month, day+1);
+const date = new Date(year, month, day);
 const startOfDay = new Date(date);
-startOfDay.setHours(-15, 0, 0, 1);
+startOfDay.setHours(0, 0, 0, 0);
 
 // Set timeMax to the end of the day
 const endOfDay = new Date(date);
-endOfDay.setHours(8, 59, 59, 999);
+endOfDay.setHours(23, 59, 59, 999);
   console.log("startDate: ",startOfDay)
   console.log("endDate: ",endOfDay)
   await calendar.events.list(
