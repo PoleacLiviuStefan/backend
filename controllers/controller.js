@@ -212,7 +212,8 @@ startOfDay.setHours(-15, 0, 0, 1);
 // Set timeMax to the end of the day
 const endOfDay = new Date(date);
 endOfDay.setHours(8, 59, 59, 999);
-  console.log("date: ",date)
+  console.log("startDate: ",startOfDay)
+  console.log("endDate: ",endOfDay)
   await calendar.events.list(
     {
       calendarId: (keyIndex===0 ? process.env.CALENDAR_ID_STEFANIA : keyIndex===1 ? process.env.CALENDAR_ID_DIANA : keyIndex===2 ? process.env.CALENDAR_ID_CATALINA : keyIndex===3 && process.env.CALENDAR_ID_GABRIELA),
