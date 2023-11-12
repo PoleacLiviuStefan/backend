@@ -2,13 +2,17 @@ const dotenv = require("dotenv");
 dotenv.config();
 const User = require("../models/userModule.js");
 const Client = require("../models/clientModule.js");
+const Admin = require("../models/adminModule.js")
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
-
+const bcrypt = require("bcryptjs");
+const jwt = require('jsonwebtoken');
+const jwtSecret = process.env.JWT_SECRET || "defaultSecret";
 const { google } = require("googleapis");
 const axios = require("axios");
 const client = require("twilio")(accountSid, authToken);
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const bcryptSalt = bcrypt.genSaltSync(10);
 let createdCustomerId="";
 const YOUR_DOMAIN = 'http://localhost:3000';
 
@@ -300,6 +304,72 @@ const configTest = (req, res) => {
   });
 }
 
+const login= async (req,res)=>{
+
+  const {email,password} = req.body;
+  try{
+    const adminDoc= await Admin.findOne({email});
+    if(!adminDoc) {
+      return res.status(404).json({error: "Admin not found"});
+    }
+
+    const passOk = bcrypt.compareSync(password, adminDoc.password);
+    if(passOk){
+      jwt.sign({email: adminDoc.email, id: adminDoc._id,}, jwtSecret, {}, (err,token) =>{
+        if(err){
+          return res.status(500).json({error: "JWT generation failed"});
+        }
+        res.cookie('token', token).json('Login successful');
+      });
+
+    } else{
+      res.status(401).json({error: "Password not correct"});
+    }
+  } catch(err){
+      res.status(500).json({error: "Login failed", details: err.message});
+  }
+}
+
+const savedAdmin = (req, res) => {
+  try {
+    // Retrieve user information from the token in the cookie
+    const token = req.cookies.token;
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    jwt.verify(token, jwtSecret, (err, decoded) => {
+      if (err) {
+        return res.status(401).json({ error: "Token verification failed" });
+      }
+
+      // Extract user information from the decoded token
+      const { email, id } = decoded;
+      
+      // Here, you can save the user information in the way that suits your application
+      // For example, you can store it in a database, session, or other storage mechanism
+      // In this example, I'm just sending the user information as a JSON response
+      res.json({ email, id });
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to retrieve saved admin", details: err.message });
+  }
+};
+
+const register=async(req,res)=>{
+  const {email, password} = req.body;
+  try {
+    const adminDoc = await Admin.create({
+      email,
+      password: bcrypt.hashSync(password, bcryptSalt)
+    });
+      res.json(adminDoc);
+  } catch (err) {
+    res.status(422).json({error: "Registration failed", details: err.message})
+  }
+}
+
+
 module.exports = {
   sendVerificationCode,
   verifyOTP,
@@ -313,4 +383,7 @@ module.exports = {
   createCustomer,
   createPaymentIntent,
   configTest,
+  register,
+  login,
+  savedAdmin
 };

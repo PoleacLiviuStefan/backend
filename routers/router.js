@@ -14,4 +14,7 @@ router.post("/checkout-session",controller.checkoutStripe);
 router.post("/create-customer",controller.createCustomer);
 router.post("/create-payment-intent", controller.createPaymentIntent);
 router.get("/config",controller.configTest);
+router.post("/login", controller.login);
+router.post("/saved-admin",controller.savedAdmin)
+router.post("/register",controller.register);
 module.exports = router;
