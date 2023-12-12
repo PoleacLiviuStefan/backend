@@ -7,7 +7,7 @@ const mongoose= require('mongoose')
 const google= require('googleapis')
 dotenv.config();
 
-const port=process.env.PORT;
+const port=process.env.PORT || 5005;
 mongoose.connect(process.env.MONGO_URL, { useNewUrlParser: true, useUnifiedTopology: true });
 
 app.use(cors({
